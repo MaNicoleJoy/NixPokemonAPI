@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon API</title>
+    <style>
+        body {
+            background: #33ccff; 
+            background: linear-gradient(to bottom, #33ccff 0%, #cc0099 100%);
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            margin: 20px;
+        }
+
+        .search-label {
+            font-size: 18px;
+        }
+
+        .search-input {
+            padding: 5px;
+            font-size: 16px;
+        }
+
+        .search-button, .random-button {
+            padding: 5px 10px;
+            background-color: #007bff; 
+            color: #fff; 
+            border: none;
+            cursor: pointer;
+        }
+
+        .pokemon-container {
+            margin-top: 20px;
+            border: 2px solid #007bff; 
+            padding: 10px; 
+            border-radius: 10px; 
+            background-color: #fff; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+
+        .pokemon-info {
+            flex: 1; 
+            text-align: center; 
+            padding: 10px; 
+            border-right: 2px solid #007bff; 
+        }
+
+        .pokemon-description {
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        .pokemon-image {
+            width: 200px; 
+            height: 200px; 
+            order: 2; 
+        }
+
+        .placeholder-image {
+            width: 200px; 
+            height: 200px; 
+            background-color: #ccc; 
+        }
+
+        .navigation-buttons {
+            margin-top: 20px;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Nix Pokemon Information</h1>
+        <label class="search-label" for="pokemonSearch">Search for a Pokemon:</label>
+        <input class="search-input" type="text" id="pokemonSearch">
+        <button class="search-button" onclick="searchPokemon()">Search</button>
+        
+      
+        <button class="random-button" onclick="getRandomPokemon()">Random Pokemon</button>
+        
+        <div class="pokemon-container" id="pokemonContainer">
+           
+            <div class="placeholder-image"></div>
+            
+       
+            <div class="pokemon-info" id="pokemonInfo">
+            </div>
+            
+           
+            <div class="pokemon-description" id="pokemonDescription">
+            </div>
+            <img src="" alt="" class="pokemon-image" id="pokemonImage">
+        </div>
+        
+        
+        <div class="navigation-buttons">
+            <button class="search-button" onclick="loadPreviousPokemon()">Previous</button>
+            <button class="search-button" onclick="loadNextPokemon()">Next</button>
+        </div>
+    </div>
+
+    <script>
+        let currentPokemonId = 1;
+
+        function searchPokemon() {
+            const pokemonNameOrId = document.getElementById("pokemonSearch").value.toLowerCase();
+            const apiUrl = `https://pokeapi.co/api/v2/pokemon/${pokemonNameOrId}/`;
+
+           
+            document.getElementById("pokemonImage").src = "";
+            document.getElementById("pokemonImage").alt = "";
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Pokemon not found.");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const pokemonInfo = `
+                        <h2>${data.name}</h2>
+                        <img src="${data.sprites.front_default}" alt="${data.name}">
+                        <p>Height: ${data.height} decimetres</p>
+                        <p>Weight: ${data.weight} hectograms</p>
+                    `;
+                    document.getElementById("pokemonInfo").innerHTML = pokemonInfo;
+                    
+                   
+                    fetchPokemonDescription(data.species.url);
+                })
+                .catch(error => {
+                    console.error("Error fetching Pokemon data:", error);
+                    document.getElementById("pokemonInfo").innerHTML = "Pokemon not found.";
+                    document.getElementById("pokemonDescription").textContent = "";
+                });
+        }
+
+        function loadPreviousPokemon() {
+            currentPokemonId = Math.max(1, currentPokemonId - 1);
+            loadPokemonById(currentPokemonId);
+        }
+
+        function loadNextPokemon() {
+            currentPokemonId++;
+            loadPokemonById(currentPokemonId);
+        }
+
+        function loadPokemonById(id) {
+            const apiUrl = `https://pokeapi.co/api/v2/pokemon/${id}/`;
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Pokemon not found.");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const pokemonInfo = `
+                        <h2>${data.name}</h2>
+                        <p>Height: ${data.height} decimetres</p>
+                        <p>Weight: ${data.weight} hectograms</p>
+                    `;
+                    document.getElementById("pokemonInfo").innerHTML = pokemonInfo;
+                    
+                
+                    fetchPokemonDescription(data.species.url);
+
+                
+                    document.getElementById("pokemonImage").src = data.sprites.front_default;
+                    document.getElementById("pokemonImage").alt = data.name;
+
+                   
+                    document.querySelector(".placeholder-image").style.display = "none";
+                })
+                .catch(error => {
+                    console.error("Error fetching Pokemon data:", error);
+                    document.getElementById("pokemonInfo").innerHTML = "Pokemon not found.";
+                    document.getElementById("pokemonDescription").textContent = "";
+
+            
+                    document.querySelector(".placeholder-image").style.display = "block";
+                });
+        }
+
+
+       
+        function fetchPokemonDescription(speciesUrl) {
+            fetch(speciesUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const description = data.flavor_text_entries.find(entry => entry.language.name === 'en').flavor_text;
+                    document.getElementById("pokemonDescription").textContent = description;
+                })
+                .catch(error => {
+                    console.error("Error fetching Pokemon description:", error);
+                    document.getElementById("pokemonDescription").textContent = "Description not available.";
+                });
+        }
+
+      
+        function getRandomPokemon() {
+            const randomId = Math.floor(Math.random() * 898) + 1; // There are 898 Pokemon in total
+            loadPokemonById(randomId);
+        }
+    </script>
+</body>
+</html>
